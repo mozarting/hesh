@@ -1,4 +1,3 @@
-````markdown
 # Hesh – A Minimal Shell in C
 
 ![Work in Progress](https://img.shields.io/badge/status-WIP-orange) ![License](https://img.shields.io/badge/License-MIT-green)
@@ -34,7 +33,6 @@ This project was built to deepen understanding of Linux system calls and low-lev
 ```bash
 gcc -o hesh shell.c
 ```
-````
 
 ### Run:
 
