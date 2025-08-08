@@ -12,12 +12,12 @@ This project was built to deepen understanding of Linux system calls and low-lev
 
 ## Features
 
-- [] Execute system commands (e.g., `ls`, `grep`, `cat`)
-- [] Built-in commands: `cd`, `pwd`, `exit`
-- [] Input/output redirection (`>`, `<`)
-- [] Command piping (`|`)
-- [] Background process support (`&`)
-- [] Minimal, clean REPL-style prompt
+- [x] Minimal, clean REPL-style prompt
+- [x] Execute system commands (e.g., `ls`, `grep`, `cat`)
+- [x] Built-in commands: `cd`, `pwd`, `exit`
+- [ ] Input/output redirection (`>`, `<`)
+- [ ] Command piping (`|`)
+- [ ] Background process support (`&`)
 
 ---
 
@@ -98,4 +98,4 @@ MIT License
 
 ## Author
 
-Built with pure C.
+Mahesh Odedara
