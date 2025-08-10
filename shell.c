@@ -1,3 +1,4 @@
+#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -14,6 +15,60 @@ void parse_cmd(char *input, char *args[64]) {
   }
 
   args[i] = NULL;
+}
+
+void run_cmd(char *args[]) {
+  if (strcmp(args[0], "exit") == 0) {
+    printf("exit\n");
+    exit(0);
+  } else if (strcmp(args[0], "cd") == 0) {
+    if (args[1] != NULL) {
+      if (chdir(args[1]) != 0) {
+        perror("cd failed");
+      }
+    } else {
+      chdir(getenv("HOME"));
+    }
+  } else {
+    int redirect = -1;
+    for (int i = 0; args[i] != NULL; i++) {
+      if (strcmp(args[i], ">") == 0) {
+        redirect = i;
+        break;
+      }
+    }
+
+    pid_t pid = fork();
+    if (pid == 0) {
+      if (redirect != -1) {
+        if (args[redirect + 1] == NULL) {
+          fprintf(stderr, "Syntax error: no file after '>'\n");
+          exit(1);
+        }
+
+        int fd = open(args[redirect + 1], O_WRONLY | O_CREAT | O_TRUNC, 0644);
+        if (fd < 0) {
+          perror("open");
+          exit(1);
+        }
+        if (dup2(fd, STDOUT_FILENO) < 0) {
+          perror("dup2");
+          exit(1);
+        }
+        close(fd);
+
+        args[redirect] = NULL;
+      }
+
+      execvp(args[0], args);
+      perror("exec failed");
+      exit(1);
+    } else if (pid > 0) {
+      wait(NULL);
+    } else {
+      perror("fork failed");
+    }
+  }
 }
 
 int main() {
@@ -39,28 +94,7 @@ int main() {
     if (args[0] == NULL) {
       continue;
     }
-
-    if (strcmp(args[0], "exit") == 0) {
-      printf("exit\n");
-      exit(0);
-    } else if (strcmp(args[0], "cd") == 0) {
-      if (args[1] != NULL) {
-        if (chdir(args[1]) != 0) {
-          perror("cd failed");
-        }
-      } else {
-        chdir(getenv("HOME"));
-      }
-    } else {
-      pid_t pid = fork();
-      if (pid == 0) {
-        execvp(args[0], args);
-        perror("exec failed");
-        exit(1);
-      } else {
-        wait(NULL);
-      }
-    }
+    run_cmd(args);
   }
 
   return 0;
