@@ -6,15 +6,35 @@
 #include <unistd.h>
 
 void parse_cmd(char *input, char *args[64]) {
-  char *token = strtok(input, " \t\n");
+  char temp[512];
+  int j = 0;
 
-  int i = 0;
-  while (token != NULL && i < 64) {
-    args[i++] = token;
+  for (int i = 0; input[i] != '\0'; i++) {
+    if (input[i] == '>' || input[i] == '<') {
+      if (j > 0 && temp[j - 1] != ' ')
+        temp[j++] = ' ';
+
+      temp[j++] = input[i];
+
+      if (input[i] == '>' && input[i + 1] == '>') {
+        temp[j++] = input[++i];
+      }
+
+      if (input[i + 1] != ' ' && input[i + 1] != '\0')
+        temp[j++] = ' ';
+    } else {
+      temp[j++] = input[i];
+    }
+  }
+  temp[j] = '\0';
+
+  char *token = strtok(temp, " \t\n");
+  int k = 0;
+  while (token != NULL && k < 63) {
+    args[k++] = strdup(token);
     token = strtok(NULL, " \t\n");
   }
-
-  args[i] = NULL;
+  args[k] = NULL;
 }
 
 void run_cmd(char *args[]) {
