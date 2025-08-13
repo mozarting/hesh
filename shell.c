@@ -30,39 +30,78 @@ void run_cmd(char *args[]) {
       chdir(getenv("HOME"));
     }
   } else {
-    int redirect = -1;
+    int redirect_out = -1;
+    int redirect_in = -1;
+    int is_append = 0;
+
     for (int i = 0; args[i] != NULL; i++) {
       if (strcmp(args[i], ">") == 0) {
-        redirect = i;
-        break;
+        redirect_out = i;
+        is_append = 0;
+      } else if (strcmp(args[i], ">>") == 0) {
+        redirect_out = i;
+        is_append = 1;
+      } else if (strcmp(args[i], "<") == 0) {
+        redirect_in = i;
       }
     }
 
     pid_t pid = fork();
     if (pid == 0) {
-      if (redirect != -1) {
-        if (args[redirect + 1] == NULL) {
-          fprintf(stderr, "Syntax error: no file after '>'\n");
+      if (redirect_out != -1) {
+        if (args[redirect_out + 1] == NULL) {
+          fprintf(stderr, "Syntax error: no file after '%s'\n",
+                  args[redirect_out]);
           exit(1);
         }
 
-        int fd = open(args[redirect + 1], O_WRONLY | O_CREAT | O_TRUNC, 0644);
-        if (fd < 0) {
-          perror("open");
-          exit(1);
+        int flags = O_WRONLY | O_CREAT;
+        if (is_append) {
+          flags |= O_APPEND;
+        } else {
+          flags |= O_TRUNC;
         }
-        if (dup2(fd, STDOUT_FILENO) < 0) {
-          perror("dup2");
-          exit(1);
-        }
-        close(fd);
 
-        args[redirect] = NULL;
+        int fd_out = open(args[redirect_out + 1], flags, 0644);
+        if (fd_out < 0) {
+          perror("open output file");
+          exit(1);
+        }
+
+        if (dup2(fd_out, STDOUT_FILENO) < 0) {
+          perror("dup2 stdout");
+          exit(1);
+        }
+        close(fd_out);
+
+        args[redirect_out] = NULL;
+      }
+
+      if (redirect_in != -1) {
+        if (args[redirect_in + 1] == NULL) {
+          fprintf(stderr, "Syntax error: no file after '<'\n");
+          exit(1);
+        }
+
+        int fd_in = open(args[redirect_in + 1], O_RDONLY);
+        if (fd_in < 0) {
+          perror("open input file");
+          exit(1);
+        }
+
+        if (dup2(fd_in, STDIN_FILENO) < 0) {
+          perror("dup2 stdin");
+          exit(1);
+        }
+        close(fd_in);
+
+        args[redirect_in] = NULL;
       }
 
       execvp(args[0], args);
       perror("exec failed");
       exit(1);
+
     } else if (pid > 0) {
       wait(NULL);
     } else {
