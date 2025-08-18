@@ -11,8 +11,9 @@ void parse_cmd(char *input, char *args[64]) {
 
   for (int i = 0; input[i] != '\0'; i++) {
     if (input[i] == '>' || input[i] == '<') {
-      if (j > 0 && temp[j - 1] != ' ')
+      if (j > 0 && temp[j - 1] != ' ') {
         temp[j++] = ' ';
+      }
 
       temp[j++] = input[i];
 
@@ -20,8 +21,9 @@ void parse_cmd(char *input, char *args[64]) {
         temp[j++] = input[++i];
       }
 
-      if (input[i + 1] != ' ' && input[i + 1] != '\0')
+      if (input[i + 1] != ' ' && input[i + 1] != '\0') {
         temp[j++] = ' ';
+      }
     } else {
       temp[j++] = input[i];
     }
@@ -130,6 +132,68 @@ void run_cmd(char *args[]) {
   }
 }
 
+void run_pipe(char *input) {
+  char *left = strtok(input, "|");
+  char *right = strtok(NULL, "|");
+
+  while (*left == ' ') {
+    left++;
+  }
+  while (*right == ' ') {
+    right++;
+  }
+
+  char *args_left[64];
+  int i = 0;
+  char *token = strtok(left, " \t\n");
+  while (token != NULL && i < 9) {
+    args_left[i++] = token;
+    token = strtok(NULL, " \t\n");
+  }
+  args_left[i] = NULL;
+
+  char *args_right[10];
+  i = 0;
+  token = strtok(right, " \t\n");
+  while (token != NULL && i < 9) {
+    args_right[i++] = token;
+    token = strtok(NULL, " \t\n");
+  }
+  args_right[i] = NULL;
+
+  int pipefd[2];
+  if (pipe(pipefd) == -1) {
+    perror("pipe failed");
+    exit(1);
+  }
+
+  pid_t pid1 = fork();
+  if (pid1 == 0) {
+    dup2(pipefd[1], STDOUT_FILENO);
+    close(pipefd[0]);
+    close(pipefd[1]);
+    execvp(args_left[0], args_left);
+    perror("exec left failed");
+    exit(1);
+  }
+
+  pid_t pid2 = fork();
+  if (pid2 == 0) {
+    dup2(pipefd[0], STDIN_FILENO);
+    close(pipefd[1]);
+    close(pipefd[0]);
+    execvp(args_right[0], args_right);
+    perror("exec right failed");
+    exit(1);
+  }
+
+  close(pipefd[0]);
+  close(pipefd[1]);
+
+  waitpid(pid1, NULL, 0);
+  waitpid(pid2, NULL, 0);
+}
+
 int main() {
   char pwd[256];
   char *args[64];
@@ -149,11 +213,15 @@ int main() {
 
     input[strcspn(input, "\n")] = '\0';
 
-    parse_cmd(input, args);
-    if (args[0] == NULL) {
-      continue;
+    if (strchr(input, '|')) {
+      run_pipe(input);
+    } else {
+      parse_cmd(input, args);
+      if (args[0] == NULL) {
+        continue;
+      }
+      run_cmd(args);
     }
-    run_cmd(args);
   }
 
   return 0;
