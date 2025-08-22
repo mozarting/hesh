@@ -15,8 +15,8 @@ This project was built to deepen understanding of Linux system calls and low-lev
 - [x] Minimal, clean REPL-style prompt
 - [x] Execute system commands (e.g., `ls`, `grep`, `cat`)
 - [x] Built-in commands: `cd`, `pwd`, `exit`
-- [ ] Input/output redirection (`>`, `<`)
-- [ ] Command piping (`|`)
+- [x] Input/output redirection (`>`, `<`)
+- [x] Command piping (`|`)
 - [ ] Background process support (`&`)
 
 ---
